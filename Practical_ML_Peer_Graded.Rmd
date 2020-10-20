@@ -1,0 +1,99 @@
+---
+title: "Practical ML Analytical work"
+author: "Harhita More"
+date: "20th October 2020"
+output:
+  word_document: default
+  html_document: default
+---
+Here I am doing a visualisation of practical ML.I will be using RStudio Markdown for the purpose of my code and Knitr for the analysing stuff.
+
+A detailed introduction of my assignment:
+
+We are working on the humongous database from different renowned categories like Nike band, Fitbit, jawbone. Now we are going to leverage the given data for analytical purpose.Various people do not perform same level of exercise or other fitness routine. Therefore, in this detailed project work, we are making use of the values from the measure of accelerometer of such people. This data  is used for anticipation purpose. The prediction is basically based on if the person is following his fitness routine religiously and timely.
+There are two files. They consist of the following: 1) Test data 2) Training data
+These data will be used to anticipate the ordering of exercise as well. Our first step is to load the data and the second step is to process the data. After this, the third step is to perform the exploratory analysis and the fouth one is to predict the selection of the most efficient model.The last step is to predict the output we are going to obtain.
+
+In the following lines of code, we are loading the various packages which will be helpful further 
+```{r}
+library(caret)
+library(knitr)
+library(data.table)
+library(rpart.plot)
+library(rpart)
+library(gbm)
+library(ggplot2)
+library(corrplot)
+```
+Here we have starting making use of the data by assigning the URL to the variables "fityes" and "workyes". Then we read the files in two different variables "fityesvalue" and "valueworkyes".
+```{r}
+fityes <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+workyes  <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+
+fityesvalue <- read.csv(url(fityes))
+valueworkyes <- read.csv(url(workyes))
+```
+Let us now clean the data for our smooth analysis later on. For this, we rae using two variables "vwork" and"vfit" and filtering out the non applicable data in the given values.
+```{r}
+vwork <- valueworkyes[, colSums(is.na(valueworkyes)) == 0]
+vfit<- fityesvalue[, colSums(is.na(fityesvalue)) == 0]
+```
+Let us assume "vwork" as our training dataset and "vfit" as our testing dataset. vwork has seventy percent data and vfit has thirty percent data. vfit will be used again later for predicting twenty more cases.
+```{r}
+vwork <- vwork[, -c(1:7)]
+vfit <- vfit[, -c(1:7)]
+dim(vwork)
+```
+Now we are using one more variable "worknow" to create partition of the training dataset. Then we check the dimensions of the modified dataset in the variables declared above.
+```{r}
+set.seed(1234)
+worknow <- createDataPartition(valueworkyes$classe, p = 0.7, list = FALSE)
+vwork <- vwork[worknow, ]
+vfit <- vwork[-worknow, ]
+dim(vwork)
+dim(vfit)
+```
+In the following chunk, we remove unwanted values from the dataset and check dimensions again to verify.
+```{r}
+notzerohere <- nearZeroVar(vwork)
+vwork <- vwork[, -notzerohere]
+vfit <- vfit[, -notzerohere]
+dim(vwork)
+dim(vfit)
+```
+Now we plot the outcome of the cleaned data for the pupose of exploratory analysis
+```{r}
+plot_cor <- cor(vwork[, -53])
+corrplot(plot_cor, order = "FPC", method = "color", type = "upper", tl.cex = 0.8, tl.col = rgb(0, 0, 0))
+```
+The observation is that the correlation prediction are the dark coloured intersects.
+In the next chunk of code, we are going to predict. Hencefoth, we use trees algorithm and random forests algorithm to build models.
+```{r}
+set.seed(20000)
+makingalgo <- rpart(classe ~ ., data=vwork, method = "class")
+rpart.plot(makingalgo)
+```
+Since the models are build, now it is time to validate each one of them.
+```{r}
+makingmodel <- predict(makingalgo, vfit, type = "class")
+wow<- confusionMatrix(makingmodel, vfit$classe)
+wow
+```
+Now we will plot our validated model.
+```{r}
+plot(makingmodel)
+```
+We are not applying the models simultaneously here. The models one after another are applied as follows:
+1) General boosted
+2)GBM
+```{r}
+set.seed(10000)
+newone <- trainControl(method = "repeatedcv", number = 5, repeats = 1)
+newnewone <- train(classe ~ .,data=vwork, method = "gbm", trControl = newone, verbose = FALSE)
+newnewone$finalModel
+```
+Conclusion: Hence, we have successfully completed the analysis to arrive at significant results.
+
+Note: I am unable to attach the file ue to some glitch. The file comprises of the output. Thus, attached herewith are the rmd and pdf files. I attached the link to GitHub as well which originally contained the HTML and rmd line. Sorry for the inconvenience caused.
+
+Thank you so much for going through my analysis.
